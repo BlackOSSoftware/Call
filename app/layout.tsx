@@ -10,12 +10,12 @@ const sans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Quick Dialer",
-  description: "Mobile-first dialer for Android — Quick Dialer",
-  applicationName: "Quick Dialer",
+  title: "Lead Calling CRM",
+  description: "Mobile-first lead calling CRM for Android",
+  applicationName: "Lead Calling CRM",
   appleWebApp: {
     capable: true,
-    title: "Quick Dialer",
+    title: "Lead Calling CRM",
     statusBarStyle: "black-translucent",
   },
   formatDetection: {
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0A0A0A",
+  themeColor: "#09090B",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -36,8 +36,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${sans.variable} min-h-[100dvh] antialiased`}>
+    <html lang="en" className="dark h-full overflow-hidden">
+      <body
+        className={`${sans.variable} h-full max-h-[100dvh] overflow-hidden antialiased`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>

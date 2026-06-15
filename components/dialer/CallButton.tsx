@@ -12,7 +12,7 @@ export function CallButton({ onPress, loading, disabled }: CallButtonProps) {
   const isBusy = loading || disabled;
 
   return (
-    <div className="flex w-full flex-col items-center gap-2 pt-2">
+    <div className="flex shrink-0 items-center justify-center gap-3 py-1">
       <button
         type="button"
         aria-label="Call"
@@ -21,16 +21,15 @@ export function CallButton({ onPress, loading, disabled }: CallButtonProps) {
           void hapticMedium();
           onPress();
         }}
-        className={`relative flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full bg-[#22C55E] text-white shadow-[0_12px_40px_rgba(34,197,94,0.35)] transition-all duration-200 active:scale-95 disabled:opacity-60 ${!loading ? "qd-fab-idle" : ""}`}
+        className="flex h-14 w-14 touch-manipulation select-none items-center justify-center rounded-full bg-[#22C55E] text-white shadow-[0_8px_28px_rgba(34,197,94,0.28)] transition-transform duration-75 active:scale-[0.96] disabled:opacity-60"
       >
-        <span className="absolute inset-0 rounded-full bg-white/10 opacity-0 transition-opacity hover:opacity-100" />
         {loading ? (
-          <span className="relative z-10 h-7 w-7 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          <span className="h-6 w-6 animate-spin rounded-full border-2 border-white/25 border-t-white" />
         ) : (
-          <PhoneIcon className="relative z-10 h-8 w-8" />
+          <PhoneIcon className="h-7 w-7" />
         )}
       </button>
-      <span className="text-xs font-medium uppercase tracking-wider text-[#A1A1AA]">
+      <span className="text-xs font-medium uppercase tracking-wide text-[#A1A1AA]">
         {loading ? "Calling…" : "Call"}
       </span>
     </div>

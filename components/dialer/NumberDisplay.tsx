@@ -13,22 +13,16 @@ export function NumberDisplay({
   const isPlaceholder = value.length === 0;
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-3xl border border-white/[0.08] bg-[#151515]/70 px-5 py-6 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-2xl transition-[transform,box-shadow] duration-300"
-      style={{
-        boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.45)",
-      }}
-    >
+    <div className="relative w-full shrink-0 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#151515] px-3 py-2.5 shadow-inner">
       <div
-        className={`min-h-[3.25rem] text-center font-mono text-3xl font-semibold tracking-widest sm:text-4xl ${
+        className={`truncate text-center font-mono text-[clamp(1.125rem,4.2vmin,1.625rem)] font-semibold tracking-[0.12em] ${
           isPlaceholder ? "text-[#A1A1AA]" : "text-white"
-        } transition-colors duration-200`}
+        }`}
         aria-live="polite"
+        title={value.length > 0 ? value : undefined}
       >
         {display}
       </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
     </div>
   );
 }

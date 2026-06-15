@@ -16,16 +16,12 @@ type DialPadProps = {
 
 export function DialPad({ onDigit, disabled }: DialPadProps) {
   return (
-    <div className="grid w-full max-w-sm grid-cols-3 gap-3 px-1">
+    <div className="grid h-full min-h-0 w-full max-w-[18.5rem] grid-cols-3 grid-rows-4 gap-x-2 gap-y-2 self-center [contain:paint]">
       {ROWS.flatMap((row, ri) =>
         row.map((digit, ci) => {
           if (digit === null) {
             return (
-              <div
-                key={`spacer-${ri}-${ci}`}
-                className="aspect-square min-h-[4.25rem]"
-                aria-hidden
-              />
+              <div key={`spacer-${ri}-${ci}`} className="min-h-0" aria-hidden />
             );
           }
           return (
@@ -37,16 +33,9 @@ export function DialPad({ onDigit, disabled }: DialPadProps) {
                 void hapticLight();
                 onDigit(digit);
               }}
-              className="group relative flex aspect-square min-h-[4.25rem] max-h-[5.5rem] w-full items-center justify-center rounded-2xl border border-white/[0.07] bg-[#151515]/55 text-2xl font-semibold text-white shadow-[0_4px_24px_rgba(0,0,0,0.35)] backdrop-blur-xl transition-all duration-150 active:scale-[0.96] active:bg-[#1c1c1c] disabled:pointer-events-none disabled:opacity-40"
+              className="flex min-h-[44px] min-w-0 touch-manipulation select-none items-center justify-center rounded-xl border border-white/[0.08] bg-[#181818] text-[clamp(1.1rem,4.5vmin,1.45rem)] font-semibold text-white shadow-sm transition-[transform,background-color] duration-75 active:scale-[0.97] active:bg-[#222] disabled:pointer-events-none disabled:opacity-40"
             >
-              <span
-                className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-                style={{
-                  background:
-                    "radial-gradient(circle at 30% 25%, rgba(59,130,246,0.12), transparent 55%)",
-                }}
-              />
-              <span className="relative z-10">{digit}</span>
+              {digit}
             </button>
           );
         }),

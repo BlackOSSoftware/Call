@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Quick Dialer</string>
+    <string name="title_activity_main">Quick Dialer</string>
+    <string name="package_name">com.quickdialer.app</string>
+    <string name="custom_url_scheme">com.quickdialer.app</string>
+</resources>

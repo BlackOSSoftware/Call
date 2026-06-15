@@ -2,13 +2,14 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 import {
   businessWhatsAppIntent,
-  consumerSmstoIntent,
+  consumerWhatsAppDeepLink,
+  consumerWhatsAppIntent,
   consumerWhatsAppUrl,
   openExternalUrl,
 } from "@/lib/native-links";
-import { Capacitor } from "@capacitor/core";
 import { hapticLight } from "@/lib/haptics";
 
 type Props = {
@@ -18,33 +19,39 @@ type Props = {
 };
 
 export function WhatsAppSheet({ open, phone, onClose }: Props) {
-  const openConsumer = async () => {
+  const openConsumer = () => {
     void hapticLight();
-    const url = consumerWhatsAppUrl(phone);
-    if (Capacitor.isNativePlatform()) {
-      try {
-        await openExternalUrl(consumerSmstoIntent(phone));
-      } catch {
-        await openExternalUrl(url);
-      }
-    } else {
-      await openExternalUrl(url);
+    const direct = consumerWhatsAppDeepLink(phone);
+    if (!direct) {
+      onClose();
+      return;
     }
-    onClose();
+    if (Capacitor.isNativePlatform()) {
+      // Opens WhatsApp app chat directly (Custom Tabs / wa.me in WebView often do not).
+      window.location.href = direct;
+      onClose();
+      return;
+    }
+    void openExternalUrl(consumerWhatsAppUrl(phone)).finally(() => onClose());
   };
 
-  const openBusiness = async () => {
+  const openBusiness = () => {
     void hapticLight();
     if (Capacitor.isNativePlatform()) {
-      try {
-        await openExternalUrl(businessWhatsAppIntent(phone));
-      } catch {
-        await openExternalUrl(consumerWhatsAppUrl(phone));
+      const intent = businessWhatsAppIntent(phone);
+      if (intent) {
+        window.location.href = intent;
+        onClose();
+        return;
       }
-    } else {
-      await openExternalUrl(consumerWhatsAppUrl(phone));
+      const fallback = consumerWhatsAppIntent(phone);
+      if (fallback) {
+        window.location.href = fallback;
+        onClose();
+        return;
+      }
     }
-    onClose();
+    void openExternalUrl(consumerWhatsAppUrl(phone)).finally(() => onClose());
   };
 
   return (
@@ -80,14 +87,14 @@ export function WhatsAppSheet({ open, phone, onClose }: Props) {
               <button
                 type="button"
                 className="rounded-2xl bg-[#22C55E] py-3.5 text-sm font-semibold text-black transition active:scale-[0.99]"
-                onClick={() => void openConsumer()}
+                onClick={openConsumer}
               >
                 WhatsApp
               </button>
               <button
                 type="button"
                 className="rounded-2xl border border-white/10 bg-[#27272A] py-3.5 text-sm font-semibold text-white transition active:scale-[0.99]"
-                onClick={() => void openBusiness()}
+                onClick={openBusiness}
               >
                 WhatsApp Business
               </button>

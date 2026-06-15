@@ -4,11 +4,13 @@ import {
   waMeUrl,
   intentWhatsApp,
   normalizePhoneDigits,
+  whatsappSendDeepLink,
 } from "@/utils/phone-format";
 
 export async function openExternalUrl(url: string) {
   if (typeof window === "undefined") return;
-  if (url.startsWith("intent:")) {
+  // Hand off to installed apps / intent resolver — do not use in-app Browser (breaks WA chat).
+  if (url.startsWith("intent:") || url.startsWith("whatsapp:")) {
     window.location.href = url;
     return;
   }
@@ -24,12 +26,17 @@ export function consumerWhatsAppUrl(phone: string) {
   return waMeUrl(d);
 }
 
+/** Consumer WhatsApp app deep link (native). */
+export function consumerWhatsAppDeepLink(phone: string): string {
+  return whatsappSendDeepLink(phone);
+}
+
 export function businessWhatsAppIntent(phone: string) {
   const d = normalizePhoneDigits(phone);
   return intentWhatsApp(d, "com.whatsapp.w4b");
 }
 
-export function consumerSmstoIntent(phone: string) {
+export function consumerWhatsAppIntent(phone: string) {
   const d = normalizePhoneDigits(phone);
   return intentWhatsApp(d, "com.whatsapp");
 }

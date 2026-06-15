@@ -89,7 +89,7 @@ export function LeadCard({ lead, onCall, onWhatsApp, onQuickStatus }: Props) {
               <p className="min-w-0 truncate text-[12px] font-semibold leading-none tracking-tight text-white">
                 {lead.name}
               </p>
-              <div className="flex shrink-0 gap-0.5">
+              <div className="flex shrink-0 items-center gap-2 px-0.5">
                 <button
                   type="button"
                   aria-label="Call"

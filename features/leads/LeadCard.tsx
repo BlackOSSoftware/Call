@@ -1,26 +1,32 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageCircle, Phone } from "lucide-react";
+import { MessageCircle, Phone, UserRound } from "lucide-react";
 import type { Lead } from "@/types/lead";
 import { hapticLight } from "@/lib/haptics";
 
-export type QuickStatusKey = "npc" | "picked" | "interested" | "not_interested";
+export type QuickStatusKey =
+  | "read"
+  | "npc"
+  | "picked"
+  | "interested"
+  | "not_interested";
 
 function badge(
   label: string,
   tone: "neutral" | "green" | "blue" | "red" | "amber",
 ) {
   const map = {
-    neutral: "border-zinc-700/50 bg-zinc-800/60 text-zinc-500",
-    green: "border-emerald-500/15 bg-emerald-500/[0.07] text-emerald-400/95",
-    blue: "border-sky-500/15 bg-sky-500/[0.07] text-sky-300/95",
-    red: "border-rose-500/15 bg-rose-500/[0.06] text-rose-300/95",
-    amber: "border-amber-500/15 bg-amber-500/[0.06] text-amber-200/95",
+    neutral: "border-slate-200 bg-slate-50 text-slate-500",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    blue: "border-sky-200 bg-sky-50 text-sky-700",
+    red: "border-rose-200 bg-rose-50 text-rose-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
   } as const;
   return (
     <span
-      className={`inline-flex max-w-[5.5rem] shrink-0 truncate rounded px-1 py-px text-[8px] font-semibold capitalize leading-none ${map[tone]}`}
+      className={`inline-flex max-w-[8rem] shrink-0 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold capitalize leading-none ${map[tone]}`}
       title={label.replaceAll("_", " ")}
     >
       {label.replaceAll("_", " ")}
@@ -30,6 +36,7 @@ function badge(
 
 function callTone(s: Lead["callStatus"]) {
   if (s === "picked") return "green" as const;
+  if (s === "read") return "blue" as const;
   if (s === "npc") return "amber" as const;
   return "neutral" as const;
 }
@@ -45,19 +52,47 @@ type Props = {
   onCall: (lead: Lead) => void;
   onWhatsApp: (lead: Lead) => void;
   onQuickStatus: (lead: Lead, key: QuickStatusKey) => void;
+  onMarkSave: (lead: Lead, mark: string) => void;
 };
 
 const rowBtnBase =
-  "min-h-[30px] flex-1 touch-manipulation rounded-md border px-1 py-1 text-center text-[9px] font-semibold leading-tight tracking-tight transition-colors active:scale-[0.99]";
+  "min-h-[42px] flex-1 touch-manipulation rounded-xl border px-2.5 py-2 text-center text-[12px] font-bold leading-tight transition active:scale-[0.99]";
 
 function rowBtnClasses(active: boolean, idle: string, activeExtra: string) {
   if (active) {
-    return `${rowBtnBase} ${activeExtra} shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]`;
+    return `${rowBtnBase} ${activeExtra} shadow-sm`;
   }
   return `${rowBtnBase} ${idle}`;
 }
 
-export function LeadCard({ lead, onCall, onWhatsApp, onQuickStatus }: Props) {
+export function LeadCard({
+  lead,
+  onCall,
+  onWhatsApp,
+  onQuickStatus,
+  onMarkSave,
+}: Props) {
+  const [mark, setMark] = useState(lead.mark);
+  const markRef = useRef(mark);
+  const leadRef = useRef(lead);
+  const onMarkSaveRef = useRef(onMarkSave);
+
+  markRef.current = mark;
+  leadRef.current = lead;
+  onMarkSaveRef.current = onMarkSave;
+
+  useEffect(() => {
+    setMark(lead.mark);
+  }, [lead._id, lead.mark]);
+
+  const flushMark = () => {
+    const next = markRef.current.trim();
+    if (next === leadRef.current.mark) return;
+    onMarkSaveRef.current(leadRef.current, next);
+  };
+
+  useEffect(() => () => flushMark(), []);
+
   const initials = lead.name
     .split(/\s+/)
     .map((w) => w[0])
@@ -70,79 +105,80 @@ export function LeadCard({ lead, onCall, onWhatsApp, onQuickStatus }: Props) {
   const hotOn = lead.interestStatus === "interested";
   const coldOn = lead.interestStatus === "not_interested";
   const showInterest = pickedOn;
+  const saveMark = () => {
+    flushMark();
+  };
 
   return (
-    <article className="relative overflow-hidden rounded-lg border border-white/[0.06] bg-gradient-to-b from-zinc-900/98 to-zinc-950 ring-1 ring-white/[0.02]">
+    <article className="relative flex h-full min-h-0 flex-1 overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.10)]">
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/25 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-sky-400 to-slate-900"
         aria-hidden
       />
 
-      <div className="p-1.5">
-        <div className="flex gap-1.5">
-          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-zinc-800 text-[10px] font-bold text-white ring-1 ring-white/[0.08]">
+      <div className="flex min-h-0 w-full flex-col px-5 py-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-[15px] font-bold text-white shadow-sm">
             {initials}
           </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-1">
-              <p className="min-w-0 truncate text-[12px] font-semibold leading-none tracking-tight text-white">
-                {lead.name}
-              </p>
-              <div className="flex shrink-0 items-center gap-2 px-0.5">
-                <button
-                  type="button"
-                  aria-label="Call"
-                  title="Call"
-                  className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500 text-zinc-950 shadow-sm ring-1 ring-emerald-400/20 transition active:scale-95"
-                  onClick={() => {
-                    void hapticLight();
-                    onCall(lead);
-                  }}
-                >
-                  <Phone className="h-[13px] w-[13px]" strokeWidth={2.25} />
-                </button>
-                <button
-                  type="button"
-                  aria-label="WhatsApp"
-                  title="WhatsApp"
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-white/[0.08] bg-zinc-800/90 text-emerald-400 transition active:scale-95"
-                  onClick={() => {
-                    void hapticLight();
-                    onWhatsApp(lead);
-                  }}
-                >
-                  <MessageCircle
-                    className="h-[13px] w-[13px]"
-                    strokeWidth={2.25}
-                  />
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-0.5 flex items-center justify-between gap-1">
-              <p className="min-w-0 flex-1 truncate font-mono text-[9px] tabular-nums leading-none text-zinc-500">
-                {lead.phone}
-              </p>
-              <div className="flex shrink-0 items-center gap-0.5">
-                {badge(lead.callStatus, callTone(lead.callStatus))}
-                {badge(lead.interestStatus, interestTone(lead.interestStatus))}
-              </div>
-            </div>
+          <div className="flex min-w-0 flex-1 justify-end gap-1.5">
+            {badge(lead.callStatus, callTone(lead.callStatus))}
+            {badge(lead.interestStatus, interestTone(lead.interestStatus))}
           </div>
         </div>
 
-        <div className="mt-1.5 rounded-md border border-white/[0.05] bg-black/30 p-1">
+        <div className="flex min-h-0 flex-1 flex-col justify-center py-3">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] bg-slate-50 text-slate-400 ring-1 ring-slate-200">
+            <UserRound className="h-7 w-7" strokeWidth={1.9} />
+          </div>
+          <h2 className="mt-4 break-words text-center text-[clamp(1.45rem,6.2vw,2.05rem)] font-black leading-[1.08] text-slate-950">
+            {lead.name}
+          </h2>
+          <p className="mx-auto mt-3 w-full max-w-[18rem] break-words rounded-2xl bg-slate-50 px-4 py-2.5 text-center font-mono text-[0.95rem] font-semibold tabular-nums text-slate-600 ring-1 ring-slate-200">
+            {lead.phone}
+          </p>
+
+          <div className="mx-auto mt-5 grid w-full max-w-[17rem] grid-cols-2 gap-2">
+            <button
+              type="button"
+              aria-label="Call"
+              title="Call"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 text-[13px] font-black text-white shadow-[0_12px_22px_rgba(16,185,129,0.24)] transition active:scale-[0.98]"
+              onClick={() => {
+                void hapticLight();
+                onCall(lead);
+              }}
+            >
+              <Phone className="h-[17px] w-[17px]" strokeWidth={2.35} />
+              Call
+            </button>
+            <button
+              type="button"
+              aria-label="WhatsApp"
+              title="WhatsApp"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-[13px] font-black text-emerald-700 transition active:scale-[0.98]"
+              onClick={() => {
+                void hapticLight();
+                onWhatsApp(lead);
+              }}
+            >
+              <MessageCircle className="h-[17px] w-[17px]" strokeWidth={2.35} />
+              WhatsApp
+            </button>
+          </div>
+        </div>
+
+        <div className="shrink-0 rounded-[22px] border border-slate-200 bg-slate-50 p-2">
           <p className="sr-only">Call outcome</p>
-          <div className="flex gap-0.5">
+          <div className="flex gap-2">
             <button
               type="button"
               title="No pickup"
               aria-label="No pickup"
               className={rowBtnClasses(
                 npcOn,
-                "border-white/[0.06] bg-zinc-950/50 text-zinc-600 hover:border-amber-500/15 hover:bg-amber-500/[0.04] hover:text-amber-100",
-                "border-amber-500/30 bg-amber-500/10 text-amber-50 ring-1 ring-amber-400/25",
+                "border-slate-200 bg-white text-slate-600 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700",
+                "border-amber-300 bg-amber-100 text-amber-800 ring-1 ring-amber-200",
               )}
               aria-pressed={npcOn}
               onClick={() => {
@@ -158,8 +194,8 @@ export function LeadCard({ lead, onCall, onWhatsApp, onQuickStatus }: Props) {
               aria-label="Picked up"
               className={rowBtnClasses(
                 pickedOn && !npcOn,
-                "border-white/[0.06] bg-zinc-950/50 text-zinc-600 hover:border-emerald-500/15 hover:bg-emerald-500/[0.04] hover:text-emerald-100",
-                "border-emerald-500/30 bg-emerald-500/10 text-emerald-50 ring-1 ring-emerald-400/25",
+                "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700",
+                "border-emerald-300 bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
               )}
               aria-pressed={pickedOn && !npcOn}
               onClick={() => {
@@ -184,17 +220,17 @@ export function LeadCard({ lead, onCall, onWhatsApp, onQuickStatus }: Props) {
                 }}
                 className="overflow-hidden"
               >
-                <div className="mt-1 border-t border-white/[0.04] pt-1">
+                <div className="mt-2 border-t border-slate-200 pt-2">
                   <p className="sr-only">Interest</p>
-                  <div className="flex gap-0.5">
+                  <div className="flex gap-2">
                     <button
                       type="button"
                       title="Interested"
                       aria-label="Interested"
                       className={rowBtnClasses(
                         hotOn,
-                        "border-white/[0.06] bg-zinc-950/50 text-zinc-600 hover:border-sky-500/15 hover:bg-sky-500/[0.04] hover:text-sky-100",
-                        "border-sky-500/30 bg-sky-500/10 text-sky-50 ring-1 ring-sky-400/25",
+                        "border-slate-200 bg-white text-slate-600 hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700",
+                        "border-sky-300 bg-sky-100 text-sky-800 ring-1 ring-sky-200",
                       )}
                       aria-pressed={hotOn}
                       onClick={() => {
@@ -210,8 +246,8 @@ export function LeadCard({ lead, onCall, onWhatsApp, onQuickStatus }: Props) {
                       aria-label="Not interested"
                       className={rowBtnClasses(
                         coldOn,
-                        "border-white/[0.06] bg-zinc-950/50 text-zinc-600 hover:border-rose-500/15 hover:bg-rose-500/[0.04] hover:text-rose-100",
-                        "border-rose-500/30 bg-rose-500/10 text-rose-50 ring-1 ring-rose-400/25",
+                        "border-slate-200 bg-white text-slate-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700",
+                        "border-rose-300 bg-rose-100 text-rose-800 ring-1 ring-rose-200",
                       )}
                       aria-pressed={coldOn}
                       onClick={() => {
@@ -226,6 +262,25 @@ export function LeadCard({ lead, onCall, onWhatsApp, onQuickStatus }: Props) {
               </motion.div>
             ) : null}
           </AnimatePresence>
+          <div className="mt-2 border-t border-slate-200 pt-2">
+            <label className="sr-only" htmlFor={`mark-${lead._id}`}>
+              Mark
+            </label>
+            <input
+              id={`mark-${lead._id}`}
+              value={mark}
+              maxLength={300}
+              onChange={(e) => setMark(e.target.value)}
+              onBlur={saveMark}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.currentTarget.blur();
+                }
+              }}
+              placeholder="Mark: call back, after lunch..."
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            />
+          </div>
         </div>
       </div>
     </article>
@@ -234,35 +289,32 @@ export function LeadCard({ lead, onCall, onWhatsApp, onQuickStatus }: Props) {
 
 export function LeadSkeletonList() {
   return (
-    <div className="flex flex-col gap-1 p-0.5">
-      {Array.from({ length: 8 }).map((_, i) => (
+    <div className="mx-auto flex h-full min-h-[32rem] w-full max-w-md">
+      {Array.from({ length: 1 }).map((_, i) => (
         <div
           key={i}
-          className="animate-pulse overflow-hidden rounded-lg border border-white/[0.05] bg-gradient-to-b from-zinc-900/95 to-zinc-950 p-1.5"
+          className="flex w-full animate-pulse flex-col rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,0.08)]"
         >
-          <div className="flex gap-1.5">
-            <div className="h-8 w-8 shrink-0 rounded-md bg-zinc-800/80" />
-            <div className="flex-1 space-y-1">
-              <div className="flex justify-between gap-1">
-                <div className="h-3 w-[50%] rounded bg-zinc-800/80" />
-                <div className="flex gap-0.5">
-                  <div className="h-8 w-8 rounded-md bg-zinc-800/60" />
-                  <div className="h-8 w-8 rounded-md bg-zinc-800/60" />
-                </div>
-              </div>
-              <div className="flex justify-between gap-1">
-                <div className="h-2.5 w-[38%] rounded bg-zinc-800/50" />
-                <div className="flex gap-0.5">
-                  <div className="h-3 w-9 rounded bg-zinc-800/50" />
-                  <div className="h-3 w-10 rounded bg-zinc-800/50" />
-                </div>
-              </div>
-              <div className="mt-1.5 rounded-md border border-white/[0.04] bg-black/25 p-1">
-                <div className="flex gap-0.5">
-                  <div className="h-[30px] flex-1 rounded-md bg-zinc-800/50" />
-                  <div className="h-[30px] flex-1 rounded-md bg-zinc-800/50" />
-                </div>
-              </div>
+          <div className="flex items-center justify-between">
+            <div className="h-12 w-12 rounded-2xl bg-slate-200" />
+            <div className="flex gap-1.5">
+              <div className="h-6 w-16 rounded-full bg-slate-100" />
+              <div className="h-6 w-20 rounded-full bg-slate-100" />
+            </div>
+          </div>
+          <div className="flex flex-1 flex-col items-center justify-center">
+            <div className="h-16 w-16 rounded-[22px] bg-slate-100" />
+            <div className="mt-6 h-8 w-52 rounded bg-slate-200" />
+            <div className="mt-3 h-12 w-64 rounded-2xl bg-slate-100" />
+            <div className="mt-6 grid w-64 grid-cols-2 gap-2">
+              <div className="h-12 rounded-2xl bg-slate-200" />
+              <div className="h-12 rounded-2xl bg-slate-100" />
+            </div>
+          </div>
+          <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-2">
+            <div className="flex gap-2">
+              <div className="h-[42px] flex-1 rounded-xl bg-slate-200" />
+              <div className="h-[42px] flex-1 rounded-xl bg-slate-200" />
             </div>
           </div>
         </div>

@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --lcc-bg: #09090b;
-  --lcc-surface: #18181b;
+  --lcc-bg: #f6f7fb;
+  --lcc-surface: #ffffff;
   --lcc-primary: #22c55e;
   --lcc-accent: #3b82f6;
   --lcc-danger: #ef4444;
-  --lcc-text: #ffffff;
-  --lcc-muted: #a1a1aa;
+  --lcc-text: #111827;
+  --lcc-muted: #667085;
 }
 
 @theme inline {
@@ -15,7 +15,7 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
   height: 100%;
   overflow: hidden;
 }

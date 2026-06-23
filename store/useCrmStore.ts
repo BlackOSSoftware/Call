@@ -17,7 +17,7 @@ const defaultFilters: LeadFilters = {
   sortBy: "createdAt",
   sortOrder: "desc",
   page: 1,
-  limit: 20,
+  limit: 1,
 };
 
 type CrmState = {

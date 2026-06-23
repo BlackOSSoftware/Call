@@ -1,10 +1,11 @@
-export type CallStatus = "pending" | "picked" | "npc";
+export type CallStatus = "pending" | "read" | "picked" | "npc";
 export type InterestStatus = "pending" | "interested" | "not_interested";
 
 export type Lead = {
   _id: string;
   name: string;
   phone: string;
+  mark: string;
   callStatus: CallStatus;
   interestStatus: InterestStatus;
   lastCalledAt: string | null;

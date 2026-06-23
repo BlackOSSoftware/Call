@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { LeadModel } from "@/models/Lead";
-import { putLeadBody } from "@/lib/validations/lead";
+import { patchLeadBody, putLeadBody } from "@/lib/validations/lead";
 import { normalizePhoneDigits } from "@/utils/phone-format";
 import type { Lead } from "@/types/lead";
 
@@ -10,6 +10,7 @@ function serialize(doc: {
   _id: unknown;
   name: string;
   phone: string;
+  mark?: string | null;
   callStatus: string;
   interestStatus: string;
   lastCalledAt: Date | null;
@@ -20,6 +21,7 @@ function serialize(doc: {
     _id: String(doc._id),
     name: doc.name,
     phone: doc.phone,
+    mark: doc.mark ?? "",
     callStatus: doc.callStatus as Lead["callStatus"],
     interestStatus: doc.interestStatus as Lead["interestStatus"],
     lastCalledAt: doc.lastCalledAt ? doc.lastCalledAt.toISOString() : null,
@@ -70,6 +72,7 @@ export async function PUT(req: Request, ctx: Ctx) {
       {
         name: body.data.name.trim(),
         phone,
+        mark: body.data.mark?.trim() ?? "",
         callStatus: body.data.callStatus,
         interestStatus: body.data.interestStatus,
       },
@@ -94,6 +97,37 @@ export async function PUT(req: Request, ctx: Ctx) {
     }
     console.error(e);
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request, ctx: Ctx) {
+  try {
+    const { id } = await ctx.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    }
+    const body = patchLeadBody.safeParse(await req.json());
+    if (!body.success) {
+      return NextResponse.json({ error: body.error.flatten() }, { status: 400 });
+    }
+    await connectDB();
+    const doc = await LeadModel.findByIdAndUpdate(
+      id,
+      { mark: body.data.mark.trim() },
+      { new: true, runValidators: true },
+    ).lean();
+    if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(
+      serialize({
+        ...doc,
+        createdAt: doc.createdAt as Date,
+        updatedAt: doc.updatedAt as Date,
+        lastCalledAt: doc.lastCalledAt ?? null,
+      }),
+    );
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Failed to update mark" }, { status: 500 });
   }
 }
 

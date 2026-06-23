@@ -9,6 +9,7 @@ function serialize(doc: {
   _id: unknown;
   name: string;
   phone: string;
+  mark?: string | null;
   callStatus: string;
   interestStatus: string;
   lastCalledAt: Date | null;
@@ -19,6 +20,7 @@ function serialize(doc: {
     _id: String(doc._id),
     name: doc.name,
     phone: doc.phone,
+    mark: doc.mark ?? "",
     callStatus: doc.callStatus as Lead["callStatus"],
     interestStatus: doc.interestStatus as Lead["interestStatus"],
     lastCalledAt: doc.lastCalledAt ? doc.lastCalledAt.toISOString() : null,

@@ -13,6 +13,7 @@ function serialize(doc: {
   _id: unknown;
   name: string;
   phone: string;
+  mark?: string | null;
   callStatus: string;
   interestStatus: string;
   lastCalledAt: Date | null;
@@ -23,6 +24,7 @@ function serialize(doc: {
     _id: String(doc._id),
     name: doc.name,
     phone: doc.phone,
+    mark: doc.mark ?? "",
     callStatus: doc.callStatus as Lead["callStatus"],
     interestStatus: doc.interestStatus as Lead["interestStatus"],
     lastCalledAt: doc.lastCalledAt ? doc.lastCalledAt.toISOString() : null,
@@ -48,7 +50,7 @@ export async function GET(req: Request) {
       const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
       filter.$or = [{ name: rx }, { phone: rx }];
     }
-    if (callStatus && ["pending", "picked", "npc"].includes(callStatus)) {
+    if (callStatus && ["pending", "read", "picked", "npc"].includes(callStatus)) {
       filter.callStatus = callStatus;
     }
     if (
@@ -129,6 +131,7 @@ export async function POST(req: Request) {
             phone,
             callStatus: "pending",
             interestStatus: "pending",
+            mark: row.mark?.trim() ?? "",
             lastCalledAt: null,
           });
           const lean = doc.toObject();
@@ -164,6 +167,7 @@ export async function POST(req: Request) {
       phone,
       callStatus: "pending",
       interestStatus: "pending",
+      mark: one.mark?.trim() ?? "",
       lastCalledAt: null,
     });
     const lean = doc.toObject();

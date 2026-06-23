@@ -4,9 +4,10 @@ const leadSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     phone: { type: String, required: true, trim: true },
+    mark: { type: String, default: "", trim: true, maxlength: 300 },
     callStatus: {
       type: String,
-      enum: ["pending", "picked", "npc"],
+      enum: ["pending", "read", "picked", "npc"],
       default: "pending",
     },
     interestStatus: {

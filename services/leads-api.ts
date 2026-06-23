@@ -49,6 +49,19 @@ export async function patchLeadStatus(
   return res.json();
 }
 
+export async function patchLeadMark(id: string, mark: string): Promise<Lead> {
+  const res = await fetch(`/api/leads/${id}`, {
+    method: "PATCH",
+    headers: jsonHeaders(),
+    body: JSON.stringify({ mark }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error || "Mark update failed");
+  }
+  return res.json();
+}
+
 export async function deleteLead(id: string): Promise<void> {
   const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Delete failed");

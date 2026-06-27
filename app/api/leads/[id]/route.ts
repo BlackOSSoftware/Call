@@ -1,54 +1,26 @@
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { LeadModel } from "@/models/Lead";
 import { patchLeadBody, putLeadBody } from "@/lib/validations/lead";
+import {
+  deleteLead,
+  DuplicatePhoneError,
+  getLeadById,
+  isValidLeadId,
+  LeadNotFoundError,
+  updateLead,
+} from "@/services/google-sheets-leads";
 import { normalizePhoneDigits } from "@/utils/phone-format";
-import type { Lead } from "@/types/lead";
-
-function serialize(doc: {
-  _id: unknown;
-  name: string;
-  phone: string;
-  mark?: string | null;
-  callStatus: string;
-  interestStatus: string;
-  lastCalledAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}): Lead {
-  return {
-    _id: String(doc._id),
-    name: doc.name,
-    phone: doc.phone,
-    mark: doc.mark ?? "",
-    callStatus: doc.callStatus as Lead["callStatus"],
-    interestStatus: doc.interestStatus as Lead["interestStatus"],
-    lastCalledAt: doc.lastCalledAt ? doc.lastCalledAt.toISOString() : null,
-    createdAt: doc.createdAt.toISOString(),
-    updatedAt: doc.updatedAt.toISOString(),
-  };
-}
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
-    if (!mongoose.isValidObjectId(id)) {
+    if (!isValidLeadId(id)) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
-    await connectDB();
-    const doc = await LeadModel.findById(id).lean();
-    if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(
-      serialize({
-        ...doc,
-        createdAt: doc.createdAt as Date,
-        updatedAt: doc.updatedAt as Date,
-        lastCalledAt: doc.lastCalledAt ?? null,
-      }),
-    );
+    const lead = await getLeadById(id);
+    if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(lead);
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Failed" }, { status: 500 });
@@ -58,41 +30,27 @@ export async function GET(_req: Request, ctx: Ctx) {
 export async function PUT(req: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
-    if (!mongoose.isValidObjectId(id)) {
+    if (!isValidLeadId(id)) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
     const body = putLeadBody.safeParse(await req.json());
     if (!body.success) {
       return NextResponse.json({ error: body.error.flatten() }, { status: 400 });
     }
-    await connectDB();
     const phone = normalizePhoneDigits(body.data.phone);
-    const doc = await LeadModel.findByIdAndUpdate(
-      id,
-      {
-        name: body.data.name.trim(),
-        phone,
-        mark: body.data.mark?.trim() ?? "",
-        callStatus: body.data.callStatus,
-        interestStatus: body.data.interestStatus,
-      },
-      { new: true, runValidators: true },
-    ).lean();
-    if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(
-      serialize({
-        ...doc,
-        createdAt: doc.createdAt as Date,
-        updatedAt: doc.updatedAt as Date,
-        lastCalledAt: doc.lastCalledAt ?? null,
-      }),
-    );
+    const lead = await updateLead(id, {
+      name: body.data.name.trim(),
+      phone,
+      mark: body.data.mark?.trim() ?? "",
+      callStatus: body.data.callStatus,
+      interestStatus: body.data.interestStatus,
+    });
+    return NextResponse.json(lead);
   } catch (e: unknown) {
-    const code =
-      e && typeof e === "object" && "code" in e
-        ? (e as { code?: number }).code
-        : undefined;
-    if (code === 11000) {
+    if (e instanceof LeadNotFoundError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (e instanceof DuplicatePhoneError) {
       return NextResponse.json({ error: "Phone already exists" }, { status: 409 });
     }
     console.error(e);
@@ -103,29 +61,19 @@ export async function PUT(req: Request, ctx: Ctx) {
 export async function PATCH(req: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
-    if (!mongoose.isValidObjectId(id)) {
+    if (!isValidLeadId(id)) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
     const body = patchLeadBody.safeParse(await req.json());
     if (!body.success) {
       return NextResponse.json({ error: body.error.flatten() }, { status: 400 });
     }
-    await connectDB();
-    const doc = await LeadModel.findByIdAndUpdate(
-      id,
-      { mark: body.data.mark.trim() },
-      { new: true, runValidators: true },
-    ).lean();
-    if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(
-      serialize({
-        ...doc,
-        createdAt: doc.createdAt as Date,
-        updatedAt: doc.updatedAt as Date,
-        lastCalledAt: doc.lastCalledAt ?? null,
-      }),
-    );
+    const lead = await updateLead(id, { mark: body.data.mark.trim() });
+    return NextResponse.json(lead);
   } catch (e) {
+    if (e instanceof LeadNotFoundError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     console.error(e);
     return NextResponse.json({ error: "Failed to update mark" }, { status: 500 });
   }
@@ -134,14 +82,15 @@ export async function PATCH(req: Request, ctx: Ctx) {
 export async function DELETE(_req: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
-    if (!mongoose.isValidObjectId(id)) {
+    if (!isValidLeadId(id)) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
-    await connectDB();
-    const res = await LeadModel.findByIdAndDelete(id);
-    if (!res) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    await deleteLead(id);
     return NextResponse.json({ ok: true });
   } catch (e) {
+    if (e instanceof LeadNotFoundError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     console.error(e);
     return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
